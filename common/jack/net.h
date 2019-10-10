@@ -57,6 +57,8 @@ typedef struct {
     int audio_output;   // to master or from slave (-1 to take master audio physical outputs)
     int midi_input;     // from master or to slave (-1 to take master MIDI physical inputs)
     int midi_output;    // to master or from slave (-1 to take master MIDI physical outputs)
+    int osc_input;      // from master or to slave (-1 to take master OSC physical inputs)
+    int osc_output;     // to master or from slave (-1 to take master OSC physical inputs)
     int mtu;            // network Maximum Transmission Unit
     int time_out;       // in second, -1 means infinite
     int encoder;        // encoder type (one of JackNetEncoder)
@@ -71,6 +73,8 @@ typedef struct {
     int audio_output;                   // master audio physical inputs (-1 to take slave wanted audio outputs)
     int midi_input;                     // master MIDI physical outputs (-1 to take slave wanted MIDI inputs)
     int midi_output;                    // master MIDI physical inputs (-1 to take slave wanted MIDI outputs)
+    int osc_input;                      // master OSC physical outputs (-1 to take slave wanted OSC inputs)
+    int osc_output;                     // master OSC physical inputs (-1 to take slave wanted OSC outputs)
     jack_nframes_t buffer_size;         // master buffer size
     jack_nframes_t sample_rate;         // master sample rate
     char master_name[MASTER_NAME_SIZE]; // master machine name
@@ -115,10 +119,14 @@ int jack_net_slave_close(jack_net_slave_t* net);
  * @param audio_input_buffer an array of audio input buffers (from master)
  * @param midi_input number of MIDI inputs
  * @param midi_input_buffer an array of MIDI input buffers (from master)
+ * @param osc_input number of OSC inputs
+ * @param osc_input_buffer an array of OSC input buffers (from master)
  * @param audio_output number of audio outputs
  * @param audio_output_buffer an array of audio output buffers (to master)
  * @param midi_output number of MIDI outputs
  * @param midi_output_buffer an array of MIDI output buffers (to master)
+ * @param osc_output number of OSC outputs
+ * @param osc_output_buffer an array of OSc output buffers (to master)
  * @param arg pointer to a client supplied structure supplied by jack_set_net_process_callback()
  *
  * @return zero on success, non-zero on error
@@ -128,10 +136,14 @@ typedef int (* JackNetSlaveProcessCallback) (jack_nframes_t buffer_size,
                                             float** audio_input_buffer,
                                             int midi_input,
                                             void** midi_input_buffer,
+                                            int osc_input,
+                                            void** osc_input_buffer,
                                             int audio_output,
                                             float** audio_output_buffer,
                                             int midi_output,
                                             void** midi_output_buffer,
+                                            int osc_output,
+                                            void** osc_output_buffer,
                                             void* data);
 
 /**
@@ -309,10 +321,12 @@ int jack_net_master_close(jack_net_master_t* net);
  * @param audio_input_buffer an array of audio input buffers
  * @param midi_input number of MIDI inputs
  * @param midi_input_buffer an array of MIDI input buffers
+ * @param osc_input number of OSC inputs
+ * @param osc_input_buffer an array of OSC input buffers
  *
  * @return zero on success, non-zero on error
  */
-int jack_net_master_recv(jack_net_master_t* net, int audio_input, float** audio_input_buffer, int midi_input, void** midi_input_buffer);
+int jack_net_master_recv(jack_net_master_t* net, int audio_input, float** audio_input_buffer, int midi_input, void** midi_input_buffer, int osc_input, void** osc_input_buffer);
 
 /**
  * Receive sync and data from the network (incomplete buffer).
@@ -322,11 +336,13 @@ int jack_net_master_recv(jack_net_master_t* net, int audio_input, float** audio_
  * @param audio_input_buffer an array of audio input buffers
  * @param midi_input number of MIDI inputs
  * @param midi_input_buffer an array of MIDI input buffers
+ * @param osc_input number of OSC inputs
+ * @param osc_input_buffer an array of OSC input buffers
  * @param frames the number of frames to receive
  *
  * @return zero on success, non-zero on error
  */
-int jack_net_master_recv_slice(jack_net_master_t* net, int audio_input, float** audio_input_buffer, int midi_input, void** midi_input_buffer, int frames);
+int jack_net_master_recv_slice(jack_net_master_t* net, int audio_input, float** audio_input_buffer, int midi_input, void** midi_input_buffer, int osc_input, void** osc_input_buffer, int frames);
 
 /**
  * Send sync and data to the network (complete buffer).
@@ -336,10 +352,12 @@ int jack_net_master_recv_slice(jack_net_master_t* net, int audio_input, float** 
  * @param audio_output_buffer an array of audio output buffers
  * @param midi_output number of MIDI outputs
  * @param midi_output_buffer an array of MIDI output buffers
+ * @param osc_output number of OSC outputs
+ * @param osc_output_buffer an array of OSC output buffers
  *
  * @return zero on success, non-zero on error
  */
-int jack_net_master_send(jack_net_master_t* net, int audio_output, float** audio_output_buffer, int midi_output, void** midi_output_buffer);
+int jack_net_master_send(jack_net_master_t* net, int audio_output, float** audio_output_buffer, int midi_output, void** midi_output_buffer, int osc_output, void** osc_output_buffer);
 
 /**
  * Send sync and data to the network (incomplete buffer).
@@ -349,11 +367,13 @@ int jack_net_master_send(jack_net_master_t* net, int audio_output, float** audio
  * @param audio_output_buffer an array of audio output buffers
  * @param midi_output number of MIDI outputs
  * @param midi_output_buffer an array of MIDI output buffers
+ * @param osc_output number of OSC outputs
+ * @param osc_output_buffer an array of OSC output buffers
  * @param frames the number of frames to send
  *
  * @return zero on success, non-zero on error
  */
-int jack_net_master_send_slice(jack_net_master_t* net, int audio_output, float** audio_output_buffer, int midi_output, void** midi_output_buffer, int frames);
+int jack_net_master_send_slice(jack_net_master_t* net, int audio_output, float** audio_output_buffer, int midi_output, void** midi_output_buffer, int osc_output, void** osc_output_buffer, int frames);
 
 // Experimental Adapter API
 

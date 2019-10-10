@@ -18,8 +18,8 @@
 */
 
 
-#ifndef __JACK_MIDIPORT_H
-#define __JACK_MIDIPORT_H
+#ifndef __JACK_OSCPORT_H
+#define __JACK_OSCPORT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,21 +30,22 @@ extern "C" {
 #include <stdlib.h>
 
 
-/** Type for raw event data contained in @ref jack_midi_event_t. */
-typedef unsigned char jack_midi_data_t;
+/** Type for raw event data contained in @ref jack_osc_event_t. */
+typedef unsigned char jack_osc_data_t;
 
 
-/** A Jack MIDI event. */
-typedef struct _jack_midi_event
+/** A Jack OSC event. */
+typedef struct _jack_osc_event
 {
-	jack_nframes_t    time;   /**< Sample index at which event is valid */
-	size_t            size;   /**< Number of bytes of data in \a buffer */
-	jack_midi_data_t *buffer; /**< Raw MIDI data */
-} jack_midi_event_t;
+	jack_nframes_t    time;           /**< Sample index at which event is valid */
+	size_t            size;           /**< Number of bytes of data in \a buffer */
+	jack_osc_data_t *buffer;         /**< Raw OSC data */
+//	bool              is_event_start; /**< TODO if we allow for split events, this will do the equivalent of the start bit in a MIDI event*/
+} jack_osc_event_t;
 
 
 /**
- * @defgroup MIDIAPI Reading and writing MIDI data
+ * @defgroup OSCAPI Reading and writing OSC data
  * @{
  */
 
@@ -54,25 +55,14 @@ typedef struct _jack_midi_event
  * @return number of events inside @a port_buffer
  */
 uint32_t
-jack_midi_get_event_count(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
+jack_osc_get_event_count(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
 
 
-/** Get a MIDI event from an event port buffer.
+/** Get an OSC event from an event port buffer.
  *
- * Jack MIDI is normalised, the MIDI event returned by this function is
- * guaranteed to be a complete MIDI event (the status byte will always be
- * present, and no realtime events will interspered with the event).
- *
- * This rule does not apply to System Exclusive MIDI messages
- * since they can be of arbitrary length.
- * To maintain smooth realtime operation such events CAN be deliverd
- * as multiple, non-normalised events.
- * The maximum size of one event "chunk" depends on the MIDI backend in use.
- * For example the midiseq driver will create chunks of 256 bytes.
- * The first SysEx "chunked" event starts with 0xF0 and the last
- * delivered chunk ends with 0xF7.
- * To receive the full SysEx message, a caller of jack_midi_event_get()
- * must concatenate chunks until a chunk ends with 0xF7.
+ * The jack OSC event returned by this function is
+ * guaranteed to be a complete event.
+ * TODO how to deal with too large events? Can we simply put a max cap to an event's length? Or should there be split event support?
  *
  * @param event Event structure to store retrieved event in.
  * @param port_buffer Port buffer from which to retrieve event.
@@ -80,7 +70,7 @@ jack_midi_get_event_count(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
  * @return 0 on success, ENODATA if buffer is empty.
  */
 int
-jack_midi_event_get(jack_midi_event_t *event,
+jack_osc_event_get(jack_osc_event_t *event,
                     void        *port_buffer,
                     uint32_t    event_index) JACK_OPTIONAL_WEAK_EXPORT;
 
@@ -88,26 +78,13 @@ jack_midi_event_get(jack_midi_event_t *event,
 /** Clear an event buffer.
  *
  * This should be called at the beginning of each process cycle before calling
- * @ref jack_midi_event_reserve or @ref jack_midi_event_write. This
+ * @ref jack_osc_event_reserve or @ref jack_osc_event_write. This
  * function may not be called on an input port's buffer.
  *
  * @param port_buffer Port buffer to clear (must be an output port buffer).
  */
 void
-jack_midi_clear_buffer(void *port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
-
-/** Reset an event buffer (from data allocated outside of JACK).
- *
- * This should be called at the beginning of each process cycle before calling
- * @ref jack_midi_event_reserve or @ref jack_midi_event_write. This
- * function may not be called on an input port's buffer.
- *
- * @deprecated Please use jack_midi_clear_buffer().
- *
- * @param port_buffer Port buffer to reset.
- */
-void
-jack_midi_reset_buffer(void *port_buffer) JACK_OPTIONAL_WEAK_DEPRECATED_EXPORT;
+jack_osc_clear_buffer(void *port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
 
 
 /** Get the size of the largest event that can be stored by the port.
@@ -118,17 +95,14 @@ jack_midi_reset_buffer(void *port_buffer) JACK_OPTIONAL_WEAK_DEPRECATED_EXPORT;
  * @param port_buffer Port buffer to check size of.
  */
 size_t
-jack_midi_max_event_size(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
+jack_osc_max_event_size(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
 
 
 /** Allocate space for an event to be written to an event port buffer.
  *
  * Clients are to write the actual event data to be written starting at the
  * pointer returned by this function. Clients must not write more than
- * @a data_size bytes into this buffer.  Clients must write normalised
- * MIDI data to the port - no running status and no (1-byte) realtime
- * messages interspersed with other messages (realtime messages are fine
- * when they occur on their own, like other messages).
+ * @a data_size bytes into this buffer.
  *
  * Events must be written in order, sorted by their sample offsets.
  * JACK will not sort the events for you, and will refuse to store
@@ -140,22 +114,19 @@ jack_midi_max_event_size(void* port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
  * @return Pointer to the beginning of the reserved event's data buffer, or
  * NULL on error (ie not enough space).
  */
-jack_midi_data_t*
-jack_midi_event_reserve(void *port_buffer,
+jack_osc_data_t*
+jack_osc_event_reserve(void *port_buffer,
                         jack_nframes_t  time,
                         size_t data_size) JACK_OPTIONAL_WEAK_EXPORT;
 
 
 /** Write an event into an event port buffer.
  *
- * This function is simply a wrapper for @ref jack_midi_event_reserve
+ * This function is simply a wrapper for @ref jack_osc_event_reserve
  * which writes the event data into the space reserved in the buffer.
  *
  * Clients must not write more than
- * @a data_size bytes into this buffer.  Clients must write normalised
- * MIDI data to the port - no running status and no (1-byte) realtime
- * messages interspersed with other messages (realtime messages are fine
- * when they occur on their own, like other messages).
+ * @a data_size bytes into this buffer.
  *
  * Events must be written in order, sorted by their sample offsets.
  * JACK will not sort the events for you, and will refuse to store
@@ -168,9 +139,9 @@ jack_midi_event_reserve(void *port_buffer,
  * @return 0 on success, ENOBUFS if there's not enough space in buffer for event.
  */
 int
-jack_midi_event_write(void *port_buffer,
+jack_osc_event_write(void *port_buffer,
                       jack_nframes_t time,
-                      const jack_midi_data_t *data,
+                      const jack_osc_data_t *data,
                       size_t data_size) JACK_OPTIONAL_WEAK_EXPORT;
 
 
@@ -183,7 +154,7 @@ jack_midi_event_write(void *port_buffer,
  * @returns Number of events that could not be written to @a port_buffer.
  */
 uint32_t
-jack_midi_get_lost_event_count(void *port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
+jack_osc_get_lost_event_count(void *port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
 
 /*@}*/
 
@@ -192,6 +163,6 @@ jack_midi_get_lost_event_count(void *port_buffer) JACK_OPTIONAL_WEAK_EXPORT;
 #endif
 
 
-#endif /* __JACK_MIDIPORT_H */
+#endif /* __JACK_OSCPORT_H */
 
 
